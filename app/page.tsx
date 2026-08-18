@@ -184,6 +184,8 @@ export default function Page() {
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState("");
   const [appliedListings, setAppliedListings] = useState<string[]>([]);
+  const [applicationListing, setApplicationListing] = useState<TeamListing | null>(null);
+  const [applicationAnswers, setApplicationAnswers] = useState({ weeklyHours: "", workTime: "", writtenTasks: "", weeklyMeeting: "", busyCommunication: "", decisionStyle: "" });
   const [createdTeamListings, setCreatedTeamListings] = useState<TeamListing[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
@@ -476,7 +478,7 @@ export default function Page() {
               {recommendation && <div className="ai-reason"><Icon name="trophy" size={17} /><span><strong>Yapay zekâ önerisi:</strong> {recommendation.reason}</span></div>}
               <p className="team-description">{item.description}</p>
               <div className="listing-meta"><span><Icon name="trophy" size={15} />{item.competition}</span><span><Icon name="location" size={15} />{item.city}</span><span><Icon name="users" size={15} />{item.members} üye</span></div>
-              <div className="team-card-footer"><div className="listing-skill-tags">{item.skills.map((skill) => <span key={skill}>{skill}</span>)}</div><button type="button" className={applied ? "applied" : ""} onClick={() => setAppliedListings((current) => applied ? current.filter((id) => id !== item.id) : [...current, item.id])}>{applied ? "Başvuru gönderildi ✓" : "Takıma başvur"}<Icon name="arrow" size={17} /></button></div>
+              <div className="team-card-footer"><div className="listing-skill-tags">{item.skills.map((skill) => <span key={skill}>{skill}</span>)}</div><button type="button" className={applied ? "applied" : ""} disabled={applied} onClick={() => { setApplicationAnswers({ weeklyHours: "", workTime: "", writtenTasks: "", weeklyMeeting: "", busyCommunication: "", decisionStyle: "" }); setApplicationListing(item); }}>{applied ? "Başvuru gönderildi ✓" : "Takıma başvur"}<Icon name="arrow" size={17} /></button></div>
             </article>;
           })}</div>
           </> : activeView === "create-listing" ? <>
@@ -619,6 +621,21 @@ export default function Page() {
           <label className="calendar-form-field"><span>Açıklama</span><textarea value={newCalendarEvent.description} onChange={(event) => setNewCalendarEvent((current) => ({ ...current, description: event.target.value }))} placeholder="Etkinlik notlarını yaz" /></label>
           <div className="calendar-modal-actions"><button type="button" onClick={() => setCalendarModal(null)}>Vazgeç</button><button className="calendar-primary-action" disabled={!newCalendarEvent.title.trim()}>Takvime ekle</button></div>
         </form>}
+      </section>
+    </div>}
+    {applicationListing && <div className="application-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setApplicationListing(null); }}>
+      <section className="application-modal" role="dialog" aria-modal="true" aria-labelledby="application-modal-title">
+        <button type="button" className="application-modal-close" aria-label="Başvuru formunu kapat" onClick={() => setApplicationListing(null)}>×</button>
+        <div className="application-modal-head"><span><Icon name="users" size={16} /> Takım başvurusu</span><h2 id="application-modal-title">{applicationListing.team}</h2><p>{applicationListing.title}</p></div>
+        <form onSubmit={(event) => { event.preventDefault(); if (Object.values(applicationAnswers).some((answer) => !answer.trim())) return; setAppliedListings((current) => [...current, applicationListing.id]); setApplicationListing(null); }}>
+          <fieldset className="application-question"><legend><b>1</b> Haftada kaç saat ayırabilirsin?</legend><div className="application-options">{["1–5 saat", "6–10 saat", "11–15 saat", "15+ saat"].map((option) => <label key={option}><input required type="radio" name="weeklyHours" value={option} checked={applicationAnswers.weeklyHours === option} onChange={(event) => setApplicationAnswers((current) => ({ ...current, weeklyHours: event.target.value }))} /><span>{option}</span></label>)}</div></fieldset>
+          <fieldset className="application-question"><legend><b>2</b> Sabah mı, akşam mı çalışırsın?</legend><div className="application-options">{["Sabah", "Akşam", "Her ikisi de"].map((option) => <label key={option}><input required type="radio" name="workTime" value={option} checked={applicationAnswers.workTime === option} onChange={(event) => setApplicationAnswers((current) => ({ ...current, workTime: event.target.value }))} /><span>{option}</span></label>)}</div></fieldset>
+          <fieldset className="application-question"><legend><b>3</b> Görevlerin yazılı olarak verilmesini mi tercih edersin?</legend><div className="application-options">{["Evet", "Sözlü olabilir", "Fark etmez"].map((option) => <label key={option}><input required type="radio" name="writtenTasks" value={option} checked={applicationAnswers.writtenTasks === option} onChange={(event) => setApplicationAnswers((current) => ({ ...current, writtenTasks: event.target.value }))} /><span>{option}</span></label>)}</div></fieldset>
+          <fieldset className="application-question"><legend><b>4</b> Haftalık toplantıya katılabilir misin?</legend><div className="application-options">{["Evet", "Programa göre", "Hayır"].map((option) => <label key={option}><input required type="radio" name="weeklyMeeting" value={option} checked={applicationAnswers.weeklyMeeting === option} onChange={(event) => setApplicationAnswers((current) => ({ ...current, weeklyMeeting: event.target.value }))} /><span>{option}</span></label>)}</div></fieldset>
+          <label className="application-question application-text-question"><span><b>5</b> Yoğun dönemlerde iletişimi nasıl sürdürürsün?</span><textarea required value={applicationAnswers.busyCommunication} onChange={(event) => setApplicationAnswers((current) => ({ ...current, busyCommunication: event.target.value }))} placeholder="Kısa bir açıklama yaz..." maxLength={400} /><small>{applicationAnswers.busyCommunication.length}/400</small></label>
+          <fieldset className="application-question"><legend><b>6</b> Kararlar çoğunlukla mı yoksa rol sorumluluğuna göre mi alınmalı?</legend><div className="application-options">{["Çoğunlukla", "Rol sorumluluğuna göre", "Duruma göre birlikte"].map((option) => <label key={option}><input required type="radio" name="decisionStyle" value={option} checked={applicationAnswers.decisionStyle === option} onChange={(event) => setApplicationAnswers((current) => ({ ...current, decisionStyle: event.target.value }))} /><span>{option}</span></label>)}</div></fieldset>
+          <div className="application-actions"><div><strong>{Object.values(applicationAnswers).filter((answer) => answer.trim()).length}/6</strong><span>soru yanıtlandı</span></div><button type="button" onClick={() => setApplicationListing(null)}>Vazgeç</button><button className="submit-application" disabled={Object.values(applicationAnswers).some((answer) => !answer.trim())}>Başvuruyu gönder <Icon name="arrow" size={18} /></button></div>
+        </form>
       </section>
     </div>}
   </main>;
