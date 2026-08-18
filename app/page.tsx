@@ -145,13 +145,13 @@ const conversations = [
   { id: "cyberguard", name: "CyberGuard", initials: "CG", preview: "Hafta sonu görüşelim.", time: "Pzt", unread: 0, online: false }
 ];
 
-type CalendarEvent = { id: string; day: number; time: string; title: string; description: string; color: string };
+type CalendarEvent = { id: string; day: number; time: string; title: string; description: string; location: string; color: string };
 
 const initialCalendarEvents: CalendarEvent[] = [
-  { id: "agrovision-18", day: 18, time: "16:00", title: "AgroVision proje görüşmesi", description: "Görüntü işleme rolü ve proje yol haritası konuşulacak.", color: "cyan" },
-  { id: "skyroute-20", day: 20, time: "11:30", title: "SkyRoute teknik toplantı", description: "Optimizasyon modeli sonuçları ve sonraki sprint planı değerlendirilecek.", color: "blue" },
-  { id: "team-23", day: 23, time: "19:00", title: "Takım tanışma buluşması", description: "Yeni takım üyeleriyle çevrimiçi tanışma buluşması.", color: "purple" },
-  { id: "designlab-27", day: 27, time: "15:00", title: "DesignLab tasarım değerlendirmesi", description: "Yeni arayüz taslağı üzerinden geri bildirim oturumu.", color: "green" }
+  { id: "agrovision-18", day: 18, time: "16:00", title: "AgroVision proje görüşmesi", description: "Görüntü işleme rolü ve proje yol haritası konuşulacak.", location: "Google Meet", color: "cyan" },
+  { id: "skyroute-20", day: 20, time: "11:30", title: "SkyRoute teknik toplantı", description: "Optimizasyon modeli sonuçları ve sonraki sprint planı değerlendirilecek.", location: "Google Meet", color: "blue" },
+  { id: "team-23", day: 23, time: "19:00", title: "Takım tanışma buluşması", description: "Yeni takım üyeleriyle çevrimiçi tanışma buluşması.", location: "Google Meet", color: "purple" },
+  { id: "designlab-27", day: 27, time: "15:00", title: "DesignLab tasarım değerlendirmesi", description: "Yeni arayüz taslağı üzerinden geri bildirim oturumu.", location: "Google Meet", color: "green" }
 ];
 
 export default function Page() {
@@ -163,7 +163,7 @@ export default function Page() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(initialCalendarEvents);
   const [calendarModal, setCalendarModal] = useState<"details" | "create" | null>(null);
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<CalendarEvent | null>(null);
-  const [newCalendarEvent, setNewCalendarEvent] = useState({ day: "20", time: "12:00", title: "", description: "" });
+  const [newCalendarEvent, setNewCalendarEvent] = useState({ day: "20", time: "12:00", title: "", description: "", location: "Google Meet" });
   const [testPrompt, setTestPrompt] = useState("");
   const [testDifficulty, setTestDifficulty] = useState<"Kolay" | "Orta" | "Zor">("Orta");
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -594,9 +594,9 @@ export default function Page() {
             <div className="profile-summary-user"><span className="account-avatar large">FM<span className="online-dot" /></span><div><strong>{profile.name || "futureminds"}</strong><small>Çevrimiçi</small></div></div>
             <dl><div><dt><Icon name="school" /><span>Eğitim</span></dt><dd className={profile.education ? "" : "empty"}>{profile.education || "Belirtilmedi"}</dd></div><div><dt><Icon name="school" /><span>Okul</span></dt><dd className={profile.school ? "" : "empty"}>{profile.school || "Belirtilmedi"}</dd></div><div><dt><Icon name="briefcase" /><span>Bölüm</span></dt><dd className={profile.department ? "" : "empty"}>{profile.department || "Belirtilmedi"}</dd></div><div><dt><Icon name="location" /><span>Şehir</span></dt><dd className={profile.city ? "" : "empty"}>{profile.city || "Belirtilmedi"}</dd></div><div><dt><Icon name="tag" /><span>Yetkinlikler</span></dt><dd>{verifiedSkills.length}/{tags.length} doğrulandı</dd></div><div><dt><Icon name="trophy" /><span>Hobiler</span></dt><dd>{hobbies.length}</dd></div></dl>
           </section> : <section className="summary-card calendar-card">
-            <div className="calendar-heading"><div><span>Takvim</span><h2>Ağustos 2026</h2></div><button type="button" aria-label="Yeni etkinlik" onClick={() => { setNewCalendarEvent({ day: "20", time: "12:00", title: "", description: "" }); setCalendarModal("create"); }}><Icon name="plus" size={18} /></button></div>
+            <div className="calendar-heading"><div><span>Takvim</span><h2>Ağustos 2026</h2></div><button type="button" aria-label="Yeni etkinlik" onClick={() => { setNewCalendarEvent({ day: "20", time: "12:00", title: "", description: "", location: "Google Meet" }); setCalendarModal("create"); }}><Icon name="plus" size={18} /></button></div>
             <div className="calendar-weekdays">{["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map((day) => <span key={day}>{day}</span>)}</div>
-            <div className="calendar-grid">{Array.from({ length: 42 }, (_, index) => { const day = index - 4; const inMonth = day >= 1 && day <= 31; const displayDay = day < 1 ? 31 + day : day > 31 ? day - 31 : day; const dayEvent = calendarEvents.find((event) => event.day === day); return <button type="button" disabled={!inMonth} aria-label={dayEvent ? `${day} Ağustos, ${dayEvent.title}` : `${day} Ağustos, etkinlik ekle`} className={`${inMonth ? "" : "outside"} ${day === 18 ? "today" : ""} ${dayEvent ? "has-event" : ""}`} onClick={() => { if (dayEvent) { setSelectedCalendarEvent(dayEvent); setCalendarModal("details"); } else { setNewCalendarEvent({ day: String(day), time: "12:00", title: "", description: "" }); setCalendarModal("create"); } }} key={index}>{displayDay}</button>; })}</div>
+            <div className="calendar-grid">{Array.from({ length: 42 }, (_, index) => { const day = index - 4; const inMonth = day >= 1 && day <= 31; const displayDay = day < 1 ? 31 + day : day > 31 ? day - 31 : day; const dayEvent = calendarEvents.find((event) => event.day === day); return <button type="button" disabled={!inMonth} aria-label={dayEvent ? `${day} Ağustos, ${dayEvent.title}` : `${day} Ağustos, etkinlik ekle`} className={`${inMonth ? "" : "outside"} ${day === 18 ? "today" : ""} ${dayEvent ? "has-event" : ""}`} onClick={() => { if (dayEvent) { setSelectedCalendarEvent(dayEvent); setCalendarModal("details"); } else { setNewCalendarEvent({ day: String(day), time: "12:00", title: "", description: "", location: "Google Meet" }); setCalendarModal("create"); } }} key={index}>{displayDay}</button>; })}</div>
             <div className="upcoming-head"><h3>Yaklaşan görüşmeler</h3><span>{calendarEvents.length} etkinlik</span></div>
             <div className="event-list">{calendarEvents.map((event) => <button type="button" className="event-row" onClick={() => { setSelectedCalendarEvent(event); setCalendarModal("details"); }} key={event.id}><i className={event.color} /><div><time>{event.day} Ağustos · {event.time}</time><strong>{event.title}</strong></div><span>›</span></button>)}</div>
           </section>}
@@ -611,13 +611,15 @@ export default function Page() {
           <span className="calendar-modal-label"><Icon name="calendar" size={15} /> Toplantı ayrıntısı</span>
           <h2 id="calendar-modal-title">{selectedCalendarEvent.title}</h2>
           <div className="calendar-event-date"><Icon name="clock" size={19} /><div><strong>{selectedCalendarEvent.day} Ağustos 2026</strong><span>{selectedCalendarEvent.time}</span></div></div>
+          <div className="calendar-event-location"><Icon name="location" size={19} /><div><strong>Toplantı yeri</strong><span>{selectedCalendarEvent.location}</span></div></div>
           <p>{selectedCalendarEvent.description}</p>
           <button type="button" className="calendar-primary-action" onClick={() => setCalendarModal(null)}>Tamam</button>
-        </> : <form onSubmit={(event) => { event.preventDefault(); const title = newCalendarEvent.title.trim(); const day = Number(newCalendarEvent.day); if (!title || day < 1 || day > 31) return; const createdEvent: CalendarEvent = { id: `event-${Date.now()}`, day, time: newCalendarEvent.time, title, description: newCalendarEvent.description.trim() || "Açıklama eklenmedi.", color: "cyan" }; setCalendarEvents((current) => [...current, createdEvent].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time))); setSelectedCalendarEvent(createdEvent); setCalendarModal("details"); }}>
+        </> : <form onSubmit={(event) => { event.preventDefault(); const title = newCalendarEvent.title.trim(); const day = Number(newCalendarEvent.day); if (!title || day < 1 || day > 31) return; const createdEvent: CalendarEvent = { id: `event-${Date.now()}`, day, time: newCalendarEvent.time, title, description: newCalendarEvent.description.trim() || "Açıklama eklenmedi.", location: newCalendarEvent.location.trim() || "Belirtilmedi", color: "cyan" }; setCalendarEvents((current) => [...current, createdEvent].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time))); setSelectedCalendarEvent(createdEvent); setCalendarModal("details"); }}>
           <span className="calendar-modal-label"><Icon name="plus" size={15} /> Yeni etkinlik</span>
           <h2 id="calendar-modal-title">Takvime ekle</h2>
           <div className="calendar-form-grid"><label><span>Gün</span><input required type="number" min="1" max="31" value={newCalendarEvent.day} onChange={(event) => setNewCalendarEvent((current) => ({ ...current, day: event.target.value }))} /></label><label><span>Saat</span><input required type="time" value={newCalendarEvent.time} onChange={(event) => setNewCalendarEvent((current) => ({ ...current, time: event.target.value }))} /></label></div>
           <label className="calendar-form-field"><span>Başlık</span><input required autoFocus value={newCalendarEvent.title} onChange={(event) => setNewCalendarEvent((current) => ({ ...current, title: event.target.value }))} placeholder="Örn. Proje toplantısı" /></label>
+          <label className="calendar-form-field"><span>Toplantı yeri</span><input required value={newCalendarEvent.location} onChange={(event) => setNewCalendarEvent((current) => ({ ...current, location: event.target.value }))} placeholder="Örn. Google Meet veya toplantı odası" /></label>
           <label className="calendar-form-field"><span>Açıklama</span><textarea value={newCalendarEvent.description} onChange={(event) => setNewCalendarEvent((current) => ({ ...current, description: event.target.value }))} placeholder="Etkinlik notlarını yaz" /></label>
           <div className="calendar-modal-actions"><button type="button" onClick={() => setCalendarModal(null)}>Vazgeç</button><button className="calendar-primary-action" disabled={!newCalendarEvent.title.trim()}>Takvime ekle</button></div>
         </form>}
