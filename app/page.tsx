@@ -138,9 +138,26 @@ type QuizQuestion = { question: string; options: string[]; correctIndex: number;
 type Quiz = { topic: string; level: string; questions: QuizQuestion[] };
 type TeamRecommendation = { id: string; score: number; reason: string };
 
+const conversations = [
+  { id: "agrovision", name: "AgroVision", initials: "AV", preview: "Toplantıyı takvime ekledim.", time: "14:32", unread: 2, online: true },
+  { id: "skyroute", name: "SkyRoute AI", initials: "SA", preview: "Model sonuçlarını paylaşabilir misin?", time: "12:08", unread: 0, online: true },
+  { id: "designlab", name: "DesignLab", initials: "DL", preview: "Arayüz taslağı hazır 🎨", time: "Dün", unread: 0, online: false },
+  { id: "cyberguard", name: "CyberGuard", initials: "CG", preview: "Hafta sonu görüşelim.", time: "Pzt", unread: 0, online: false }
+];
+
+const calendarEvents = [
+  { day: 18, time: "16:00", title: "AgroVision proje görüşmesi", color: "cyan" },
+  { day: 20, time: "11:30", title: "SkyRoute teknik toplantı", color: "blue" },
+  { day: 23, time: "19:00", title: "Takım tanışma buluşması", color: "purple" },
+  { day: 27, time: "15:00", title: "DesignLab tasarım değerlendirmesi", color: "green" }
+];
+
 export default function Page() {
-  const [activeView, setActiveView] = useState<"team-search" | "create-listing" | "skills-test" | "my-profile">("team-search");
+  const [activeView, setActiveView] = useState<"team-search" | "create-listing" | "skills-test" | "my-profile" | "messages">("team-search");
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState("agrovision");
+  const [messageInput, setMessageInput] = useState("");
+  const [sentMessages, setSentMessages] = useState<Record<string, string[]>>({});
   const [testPrompt, setTestPrompt] = useState("");
   const [testDifficulty, setTestDifficulty] = useState<"Kolay" | "Orta" | "Zor">("Orta");
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -501,7 +518,7 @@ export default function Page() {
               {quizSubmitted && <div className={`verification-result ${quizPoints >= 60 ? "passed" : "failed"}`}><strong>{quizPoints >= 60 ? `Yetkinlik doğrulandı · ${quiz.level} seviyede ${quizPoints}/100 ✓` : `Yetkinlik henüz doğrulanmadı · ${quiz.level} seviyede ${quizPoints}/100`}</strong><span>{quizPoints >= 60 ? `${skillToVerify || quiz.topic} profilinde ${quiz.level} düzeyinde doğrulanmış olarak gösterilecek.` : "Doğrulamak için en az 60 puan gerekiyor. Açıklamaları inceleyip tekrar deneyebilirsin."}</span></div>}
               <div className="quiz-actions"><button type="button" className="later" onClick={() => { setQuiz(null); setQuizSubmitted(false); setQuizAnswers({}); setSecondsLeft(0); setAntiCheatViolations(0); setQuizEndReason(""); }}>Yeni test oluştur</button><button type="button" className="continue" disabled={quizSubmitted || Object.keys(quizAnswers).length !== 10} onClick={() => submitQuiz()}>{quizSubmitted ? `${quiz.level} seviyede ${quizPoints}/100` : "Testi tamamla"}<span><Icon name="arrow" size={21} /></span></button></div>
             </section>}
-          </> : <>
+          </> : activeView === "my-profile" ? <>
             <div className="page-title"><button aria-label="Geri" onClick={() => setActiveView("team-search")}><Icon name="back" size={26} /></button><div><h1>Profilim</h1><p>Kendini tanıt, yetkinliklerini ve ilgi alanlarını topluluğunla paylaş.</p></div></div>
             <form className="form-card my-profile-form" onSubmit={(event) => { event.preventDefault(); setProfileSaved(true); }}>
               <div className="profile-identity">
@@ -522,6 +539,32 @@ export default function Page() {
               <section className="profile-edit-section"><h2>Hobiler</h2><p>Boş zamanlarında ilgilendiğin aktiviteleri paylaş.</p><div className="skill-entry"><input value={hobbyInput} onChange={(event) => setHobbyInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addHobby(); } }} placeholder="Örn. Fotoğrafçılık, satranç, koşu" /><button type="button" className="add-tag" onClick={addHobby}><Icon name="plus" size={17} /> Ekle</button></div><div className="tag-row hobby-tags">{hobbies.map((hobby) => <button type="button" key={hobby} onClick={() => { setHobbies(hobbies.filter((item) => item !== hobby)); setProfileSaved(false); }}>{hobby}<span>×</span></button>)}</div>{hobbies.length === 0 && <small className="skill-hint">Henüz bir hobi eklemedin.</small>}</section>
               <div className="profile-save-row"><button type="button" className="later" onClick={() => setActiveView("team-search")}>Vazgeç</button><button className="continue">{profileSaved ? "Profil kaydedildi ✓" : "Profili kaydet"}<span><Icon name="arrow" size={21} /></span></button></div>
             </form>
+          </> : <>
+            <div className="page-title messages-title"><button aria-label="Geri" onClick={() => setActiveView("team-search")}><Icon name="back" size={26} /></button><div><h1>Mesajlar</h1><p>Takımlarınla konuş, görüşmelerini planla ve takvimini tek yerden takip et.</p></div></div>
+            <section className="messaging-layout">
+              <aside className="conversation-panel">
+                <div className="conversation-head"><div><h2>Sohbetler</h2><span>{conversations.length} konuşma</span></div><button type="button" aria-label="Yeni mesaj"><Icon name="plus" size={18} /></button></div>
+                <label className="conversation-search"><Icon name="search" size={16} /><input placeholder="Sohbetlerde ara" /></label>
+                <div className="conversation-list">{conversations.map((conversation) => <button type="button" className={selectedConversation === conversation.id ? "active" : ""} onClick={() => setSelectedConversation(conversation.id)} key={conversation.id}>
+                  <span className="conversation-avatar">{conversation.initials}{conversation.online && <i />}</span>
+                  <span className="conversation-copy"><strong>{conversation.name}</strong><small>{conversation.preview}</small></span>
+                  <span className="conversation-meta"><time>{conversation.time}</time>{conversation.unread > 0 && <b>{conversation.unread}</b>}</span>
+                </button>)}</div>
+              </aside>
+              <section className="chat-panel">
+                {(() => { const activeConversation = conversations.find((item) => item.id === selectedConversation) || conversations[0]; return <>
+                  <header className="chat-head"><span className="conversation-avatar">{activeConversation.initials}{activeConversation.online && <i />}</span><div><h2>{activeConversation.name}</h2><span>{activeConversation.online ? "Çevrimiçi" : "Son görülme dün"}</span></div><button type="button" title="Takvimde görüşme oluştur"><Icon name="calendar" size={19} /></button></header>
+                  <div className="chat-messages">
+                    <div className="chat-date">Bugün</div>
+                    <div className="chat-bubble incoming"><p>Merhaba! Başvurunu inceledik, projedeki görüntü işleme rolü için tanışmak isteriz.</p><time>14:18</time></div>
+                    <div className="chat-bubble outgoing"><p>Merhaba, çok sevinirim. Projenizin mevcut durumunu konuşabiliriz.</p><time>14:24</time></div>
+                    <div className="chat-bubble incoming"><p>Harika! Bugün 16.00 için bir görüşme oluşturdum. Takvimde görebilirsin.</p><time>14:32</time></div>
+                    {(sentMessages[selectedConversation] || []).map((message, index) => <div className="chat-bubble outgoing" key={`${message}-${index}`}><p>{message}</p><time>Şimdi ✓</time></div>)}
+                  </div>
+                  <form className="message-composer" onSubmit={(event) => { event.preventDefault(); const value = messageInput.trim(); if (!value) return; setSentMessages((current) => ({ ...current, [selectedConversation]: [...(current[selectedConversation] || []), value] })); setMessageInput(""); }}><button type="button" aria-label="Dosya ekle"><Icon name="plus" size={20} /></button><input value={messageInput} onChange={(event) => setMessageInput(event.target.value)} placeholder="Bir mesaj yaz..." /><button className="send-message" aria-label="Mesajı gönder" disabled={!messageInput.trim()}><Icon name="arrow" size={19} /></button></form>
+                </>; })()}
+              </section>
+            </section>
           </>}
         </section>
 
@@ -538,12 +581,18 @@ export default function Page() {
             <div className="ai-summary-visual"><Icon name="trophy" size={32} /><strong>{quizSubmitted ? `${quizPoints}/100` : quiz ? `${Object.keys(quizAnswers).length}/10` : "100"}</strong><small>{quizSubmitted ? `${quiz?.level} seviye sonucu` : quiz ? "soru yanıtlandı" : "alınabilecek puan"}</small></div>
             <ul className="ai-benefits"><li><Icon name="message" /> Konuna özel sorular</li><li><Icon name="briefcase" /> Dengeli zorluk seviyesi</li><li><Icon name="trophy" /> Anında puan ve açıklama</li></ul>
             {quizSubmitted && <div className="result-note"><strong>{quizScore >= 8 ? "Harika sonuç!" : quizScore >= 6 ? "İyi gidiyorsun!" : "Gelişime devam!"}</strong><p>{quizScore >= 8 ? "Bu konuda güçlü bir bilgi seviyesine sahipsin." : quizScore >= 6 ? "Temelin sağlam; birkaç konuyu tekrar ederek ilerleyebilirsin." : "Açıklamaları inceleyip yeni bir testle tekrar deneyebilirsin."}</p></div>}
-          </section> : <section className="summary-card my-profile-summary">
+          </section> : activeView === "my-profile" ? <section className="summary-card my-profile-summary">
             <div className="summary-heading"><div><h2>Profil Durumu</h2><p>@futureminds</p></div><span>%{myProfileProgress}</span></div>
             <div className="profile-summary-user"><span className="account-avatar large">FM<span className="online-dot" /></span><div><strong>{profile.name || "futureminds"}</strong><small>Çevrimiçi</small></div></div>
             <dl><div><dt><Icon name="school" /><span>Eğitim</span></dt><dd className={profile.education ? "" : "empty"}>{profile.education || "Belirtilmedi"}</dd></div><div><dt><Icon name="school" /><span>Okul</span></dt><dd className={profile.school ? "" : "empty"}>{profile.school || "Belirtilmedi"}</dd></div><div><dt><Icon name="briefcase" /><span>Bölüm</span></dt><dd className={profile.department ? "" : "empty"}>{profile.department || "Belirtilmedi"}</dd></div><div><dt><Icon name="location" /><span>Şehir</span></dt><dd className={profile.city ? "" : "empty"}>{profile.city || "Belirtilmedi"}</dd></div><div><dt><Icon name="tag" /><span>Yetkinlikler</span></dt><dd>{verifiedSkills.length}/{tags.length} doğrulandı</dd></div><div><dt><Icon name="trophy" /><span>Hobiler</span></dt><dd>{hobbies.length}</dd></div></dl>
+          </section> : <section className="summary-card calendar-card">
+            <div className="calendar-heading"><div><span>Takvim</span><h2>Ağustos 2026</h2></div><button type="button" aria-label="Yeni etkinlik"><Icon name="plus" size={18} /></button></div>
+            <div className="calendar-weekdays">{["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map((day) => <span key={day}>{day}</span>)}</div>
+            <div className="calendar-grid">{Array.from({ length: 42 }, (_, index) => { const day = index - 4; const inMonth = day >= 1 && day <= 31; const displayDay = day < 1 ? 31 + day : day > 31 ? day - 31 : day; const hasEvent = calendarEvents.some((event) => event.day === day); return <button type="button" className={`${inMonth ? "" : "outside"} ${day === 18 ? "today" : ""} ${hasEvent ? "has-event" : ""}`} key={index}>{displayDay}</button>; })}</div>
+            <div className="upcoming-head"><h3>Yaklaşan görüşmeler</h3><span>{calendarEvents.length} etkinlik</span></div>
+            <div className="event-list">{calendarEvents.map((event) => <article key={`${event.day}-${event.title}`}><i className={event.color} /><div><time>{event.day} Ağustos · {event.time}</time><strong>{event.title}</strong></div><button type="button" aria-label="Etkinlik seçenekleri">•••</button></article>)}</div>
           </section>}
-          <button className="message-dock" aria-label="Mesajları aç"><span className="chat-launch-icon"><Icon name="message" size={23} /></span><span className="message-copy"><strong>Mesajlar</strong><small>Sohbetlerini görüntüle</small></span><span className="message-arrow"><Icon name="arrow" size={19} /></span></button>
+          {activeView !== "messages" && <button className="message-dock" aria-label="Mesajları aç" onClick={() => setActiveView("messages")}><span className="chat-launch-icon"><Icon name="message" size={23} /></span><span className="message-copy"><strong>Mesajlar</strong><small>Sohbet ve takvimini görüntüle</small></span><span className="message-arrow"><Icon name="arrow" size={19} /></span></button>}
         </aside>
       </div>
     </section>
